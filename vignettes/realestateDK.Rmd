@@ -1,0 +1,100 @@
+---
+title: "realestateDK"
+author: "Mikkel Freltoft Krogsholm"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{realestateDK}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette is an introduction the `realestateDK` package.
+
+The package has several functions for getting real estate data for Denmark. The data is retrieved from the API of "Boligmarkedsstatistikken", which you can find here: http://rkr.statistikbank.dk/.
+
+# Basic example
+
+### First load the packages needed
+```{r, message=FALSE, warning=FALSE}
+library(realestateDK); library(dplyr); library(statsDK); library(ggplot2)
+```
+
+Lets see what functions are available in the package:
+
+```{r}
+ls("package:realestateDK")
+```
+
+If we inspect the `BM010()` function then we see that it is a function for retrieving "Property prices in housing market". More specifically it gets property prices in housing market by area, property category, prices of completed transactions and time.
+
+The help information for the function show us the following parameters:
+
+* **EJKAT20** is the property category. Call realestateDK::table_vars("BM010") to see all available parameter settings.
+
+* **OMR20** is the area. Call realestateDK::table_vars("BM010") to see all available parameter settings.
+
+* **PRIS20** is the prices of completed transactions. Call realestateDK::table_vars("BM010") to see all available parameter settings.
+
+* **Tid**	 is the time. Call realestateDK::table_vars("BM010") to see all available parameter settings.
+
+* **lang**	whether to return the data in english or danish.
+
+They state that we can call `table_vars("BM010")` to see all available parameter settings. Lets try that:
+
+```{r}
+table_vars("BM010")
+```
+
+This produces a table that shows us all the possibilities that we have when we call this function to retrieve property prices in housing market.
+
+You can call the function yourself on the other function names to get the paramenters for them as well.
+
+### Retrieve data
+
+Lets get data for `Owner-occupied flat` in `All Denmark` at the `Transaction price realised` for all available times.
+```{r}
+my_data <- BM010(EJKAT20 = "2", OMR20 = "00", PRIS20 = "REAL", Tid = "*")
+```
+
+Notice the use of the asterix ("*"). This tells the API to get all available data for that parameter. 
+
+Lets look at the data:
+
+```{r}
+glimpse(my_data)
+```
+
+We can see that the time (TID) column is in Quarters. We can change that with help from the `statsDK` package and the `fix_time()` function.
+  
+```{r}
+my_data$TID <- fix_time(my_data$TID)
+
+glimpse(my_data)
+```
+
+Now we can plot the data:
+
+### Plot the data  
+
+  
+```{r}
+ggplot(my_data) + 
+  geom_line(aes(x = TID, y = INDHOLD)) + 
+  labs(x = "", y = "Apartment prices in Denmark") +
+  theme_minimal()
+```
+
+Wow, what a development. We also see the effect of the financial crisis and the current rebound.
+
+### Meta data
+The table with the data also contains the meta data as attribute.
+
+You can access the meta data this way:
+
+```{r}
+metadata <- attributes(my_data)$metadata
+
+glimpse(metadata)
+```
+
